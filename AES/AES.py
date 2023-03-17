@@ -1,10 +1,7 @@
 
-def xor_bytes(text1: bytes, text2: bytes):
-    return bytes([i ^ j for i, j in zip(text1, text2)])
-
 class AES_Block:
-    rounds_by_key_size = {16: 10, 24: 12, 32: 14}
-    s_box = (
+    keylength2rounds = {16: 10, 24: 12, 32: 14}
+    sbox = (
         0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
         0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
         0xB7, 0xFD, 0x93, 0x26, 0x36, 0x3F, 0xF7, 0xCC, 0x34, 0xA5, 0xE5, 0xF1, 0x71, 0xD8, 0x31, 0x15,
@@ -22,7 +19,7 @@ class AES_Block:
         0xE1, 0xF8, 0x98, 0x11, 0x69, 0xD9, 0x8E, 0x94, 0x9B, 0x1E, 0x87, 0xE9, 0xCE, 0x55, 0x28, 0xDF,
         0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16
     )
-    inv_s_box = (
+    inv_sbox = (
         0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38, 0xBF, 0x40, 0xA3, 0x9E, 0x81, 0xF3, 0xD7, 0xFB,
         0x7C, 0xE3, 0x39, 0x82, 0x9B, 0x2F, 0xFF, 0x87, 0x34, 0x8E, 0x43, 0x44, 0xC4, 0xDE, 0xE9, 0xCB,
         0x54, 0x7B, 0x94, 0x32, 0xA6, 0xC2, 0x23, 0x3D, 0xEE, 0x4C, 0x95, 0x0B, 0x42, 0xFA, 0xC3, 0x4E,
@@ -40,7 +37,7 @@ class AES_Block:
         0xA0, 0xE0, 0x3B, 0x4D, 0xAE, 0x2A, 0xF5, 0xB0, 0xC8, 0xEB, 0xBB, 0x3C, 0x83, 0x53, 0x99, 0x61,
         0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D,
     )
-    r_con = (
+    rcon = (
     0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40,
     0x80, 0x1B, 0x36, 0x6C, 0xD8, 0xAB, 0x4D, 0x9A,
     0x2F, 0x5E, 0xBC, 0x63, 0xC6, 0x97, 0x35, 0x6A,
@@ -48,18 +45,23 @@ class AES_Block:
     )
 
 
-    @classmethod
-    def _sub_bytes(cls, s):
-        for i in range(4):
-            for j in range(4):
-                s[i][j] = cls.s_box[s[i][j]]
+    @staticmethod
+    def xor(iteration1, iteration2):
+        return bytes([i ^ j for i, j in zip(iteration1, iteration2)])
 
 
-    @classmethod
-    def _inv_sub_bytes(cls, s):
+    @staticmethod
+    def sub_bytes(s: list):
         for i in range(4):
             for j in range(4):
-                s[i][j] = cls.inv_s_box[s[i][j]]
+                s[i][j] = AES_Block.sbox[s[i][j]]
+
+
+    @staticmethod
+    def inv_sub_bytes(s: list):
+        for i in range(4):
+            for j in range(4):
+                s[i][j] = AES_Block.inv_sbox[s[i][j]]
 
 
     # s[column][row]
@@ -67,8 +69,8 @@ class AES_Block:
     # s[0][1] s[1][1] s[2][1] s[3][1]
     # s[0][2] s[1][2] s[2][2] s[3][2]
     # s[0][3] s[1][3] s[2][3] s[3][3]
-    @classmethod
-    def _shift_rows(cls, s):
+    @staticmethod
+    def shift_rows(s: list):
         s[0][1], s[1][1], s[2][1], s[3][1] = s[1][1], s[2][1], s[3][1], s[0][1]
         s[0][2], s[1][2], s[2][2], s[3][2] = s[2][2], s[3][2], s[0][2], s[1][2]
         s[0][3], s[1][3], s[2][3], s[3][3] = s[3][3], s[0][3], s[1][3], s[2][3]
@@ -79,24 +81,24 @@ class AES_Block:
     # s[0][1] s[1][1] s[2][1] s[3][1]
     # s[0][2] s[1][2] s[2][2] s[3][2]
     # s[0][3] s[1][3] s[2][3] s[3][3]
-    @classmethod
-    def _inv_shift_rows(cls, s):
+    @staticmethod
+    def inv_shift_rows(s: list):
         s[0][1], s[1][1], s[2][1], s[3][1] = s[3][1], s[0][1], s[1][1], s[2][1]
         s[0][2], s[1][2], s[2][2], s[3][2] = s[2][2], s[3][2], s[0][2], s[1][2]
         s[0][3], s[1][3], s[2][3], s[3][3] = s[1][3], s[2][3], s[3][3], s[0][3]
 
 
-    @classmethod
-    def _add_round_key(cls, s, k):
+    @staticmethod
+    def add_round_key(s: list, k: list):
         for i in range(4):
             for j in range(4):
                 s[i][j] ^= k[i][j]
 
 
     # a * 0b10 in Rijndael's finite field (GF(2**8, modulus = x ** 8 + x ** 4 + x ** 3 + x + 1))
-    @classmethod
-    def _xtime(cls, a):
-        return (((a << 1) ^ 0x1B) & 0xFF) if (a & 0x80) else (a << 1)
+    @staticmethod
+    def xtime(a: int):
+        return (((a << 1) ^ 0b11011) & 0xFF) if (a & 0x80) else (a << 1)
 
 
     # for a = [a0, a1, a2, a3] , (well the coefficient of polynomial is in Rijndael's finite field)
@@ -105,20 +107,20 @@ class AES_Block:
     # | a1' | = | 1 2 3 1 | | a1 |
     # | a2' | = | 1 1 2 3 | | a2 |
     # | a3' | = | 3 1 1 2 | | a3 |
-    @classmethod
-    def _mix_single_column(cls, a):
+    @staticmethod
+    def mix_single_column(a: list):
         t = a[0] ^ a[1] ^ a[2] ^ a[3]
         u = a[0]
-        a[0] ^= t ^ cls._xtime(a[0] ^ a[1])
-        a[1] ^= t ^ cls._xtime(a[1] ^ a[2])
-        a[2] ^= t ^ cls._xtime(a[2] ^ a[3])
-        a[3] ^= t ^ cls._xtime(a[3] ^ u)
+        a[0] ^= t ^ AES_Block.xtime(a[0] ^ a[1])
+        a[1] ^= t ^ AES_Block.xtime(a[1] ^ a[2])
+        a[2] ^= t ^ AES_Block.xtime(a[2] ^ a[3])
+        a[3] ^= t ^ AES_Block.xtime(a[3] ^ u)
 
 
-    @classmethod
-    def _mix_columns(cls, s):
+    @staticmethod
+    def mix_columns(s: list):
         for i in range(4):
-            cls._mix_single_column(s[i])
+            AES_Block.mix_single_column(s[i])
 
 
     # for a = [a0, a1, a2, a3] , (well the coefficient of polynomial is in Rijndael's finite field)
@@ -127,91 +129,108 @@ class AES_Block:
     # | a1' | = | 09 14 11 13 | | a1 |
     # | a2' | = | 13 09 14 11 | | a2 |
     # | a3' | = | 11 13 09 14 | | a3 |
-    @classmethod
-    def _inv_mix_columns(cls, s):
+    @staticmethod
+    def inv_mix_columns(s: list):
         for i in range(4):
-            u = cls._xtime(cls._xtime(s[i][0] ^ s[i][2]))
-            v = cls._xtime(cls._xtime(s[i][1] ^ s[i][3]))
+            u = AES_Block.xtime(AES_Block.xtime(s[i][0] ^ s[i][2]))
+            v = AES_Block.xtime(AES_Block.xtime(s[i][1] ^ s[i][3]))
             s[i][0] ^= u
             s[i][1] ^= v
             s[i][2] ^= u
             s[i][3] ^= v
 
-        cls._mix_columns(s)
+        AES_Block.mix_columns(s)
 
 
-    @classmethod
-    def _bytes2matrix(cls, text: bytes):
-        return [list(text[i:i+4]) for i in range(0, len(text), 4)]
+    @staticmethod
+    def bytes2matrix(text: bytes):
+        return [list(text[i: i + 4]) for i in range(0, len(text), 4)]
 
 
-    @classmethod
-    def _matrix2bytes(cls, matrix):
+    @staticmethod
+    def matrix2bytes(matrix):
         return bytes(sum(matrix, []))
 
 
-    def __init__(self, master_key: bytes):
-        assert len(master_key) in AES_Block.rounds_by_key_size
-
-        self.n_rounds = AES_Block.rounds_by_key_size[len(master_key)]
-        self._key_matrices = self._expand_key(master_key)
-
-
-    def _expand_key(self, master_key: bytes):
-        key_columns = self._bytes2matrix(master_key)
+    @staticmethod
+    def expand_key(master_key: bytes):
+        rounds = AES_Block.keylength2rounds[len(master_key)]
+        key_columns = AES_Block.bytes2matrix(master_key)
         iteration_size = len(master_key) // 4
 
         i = 1
-        while len(key_columns) < (self.n_rounds + 1) * 4:
-            word = list(key_columns[-1])
+        while len(key_columns) < (rounds + 1) * 4:
+            word = key_columns[-1]
 
             if len(key_columns) % iteration_size == 0:
-                word.append(word.pop(0))
-                word = [self.s_box[b] for b in word]
-                word[0] ^= self.r_con[i]
+                word = [AES_Block.sbox[w] for w in (word[1:] + [word[0]])]
+                word[0] ^= AES_Block.rcon[i]
                 i += 1
             elif len(master_key) == 32 and len(key_columns) % iteration_size == 4:
-                word = [self.s_box[b] for b in word]
+                word = [AES_Block.sbox[w] for w in word]
 
-            word = xor_bytes(word, key_columns[-iteration_size])
+            word = list(AES_Block.xor(word, key_columns[-iteration_size]))
             key_columns.append(word)
 
-        return [key_columns[4*i : 4*(i + 1)] for i in range(len(key_columns) // 4)]
+        return [key_columns[4 * i: 4 * (i + 1)] for i in range(rounds + 1)]
+
+
+    def __init__(self, master_key: bytes):
+        assert len(master_key) in AES_Block.keylength2rounds
+
+        self.rounds = AES_Block.keylength2rounds[len(master_key)]
+        self.key_matrices = AES_Block.expand_key(master_key)
 
 
     def encrypt_block(self, plaintext: bytes):
         assert len(plaintext) == 16
-        state = self._bytes2matrix(plaintext)
 
-        self._add_round_key(state, self._key_matrices[0])
+        state = AES_Block.bytes2matrix(plaintext)
 
-        for i in range(1, self.n_rounds):
-            self._sub_bytes(state)
-            self._shift_rows(state)
-            self._mix_columns(state)
-            self._add_round_key(state, self._key_matrices[i])
+        AES_Block.add_round_key(state, self.key_matrices[0])
 
-        self._sub_bytes(state)
-        self._shift_rows(state)
-        self._add_round_key(state, self._key_matrices[-1])
+        for i in range(1, self.rounds):
+            AES_Block.sub_bytes(state)
+            AES_Block.shift_rows(state)
+            AES_Block.mix_columns(state)
+            AES_Block.add_round_key(state, self.key_matrices[i])
 
-        return self._matrix2bytes(state)
+        AES_Block.sub_bytes(state)
+        AES_Block.shift_rows(state)
+        AES_Block.add_round_key(state, self.key_matrices[-1])
+
+        return AES_Block.matrix2bytes(state)
+
 
     def decrypt_block(self, cipher: bytes):
         assert len(cipher) == 16
 
-        state = self._bytes2matrix(cipher)
+        state = AES_Block.bytes2matrix(cipher)
 
-        self._add_round_key(state, self._key_matrices[-1])
-        self._inv_shift_rows(state)
-        self._inv_sub_bytes(state)
+        AES_Block.add_round_key(state, self.key_matrices[-1])
+        AES_Block.inv_shift_rows(state)
+        AES_Block.inv_sub_bytes(state)
 
-        for i in range(self.n_rounds - 1, 0, -1):
-            self._add_round_key(state, self._key_matrices[i])
-            self._inv_mix_columns(state)
-            self._inv_shift_rows(state)
-            self._inv_sub_bytes(state)
+        for i in reversed(range(1, self.rounds)):
+            AES_Block.add_round_key(state, self.key_matrices[i])
+            AES_Block.inv_mix_columns(state)
+            AES_Block.inv_shift_rows(state)
+            AES_Block.inv_sub_bytes(state)
 
-        self._add_round_key(state, self._key_matrices[0])
+        AES_Block.add_round_key(state, self.key_matrices[0])
 
-        return self._matrix2bytes(state)
+        return AES_Block.matrix2bytes(state)
+
+
+# =====================
+import os
+from Crypto.Cipher import AES
+
+key = os.urandom(16)
+plain = os.urandom(16)
+
+print(AES_Block(key).encrypt_block(plain).hex())
+print(AES_Block(key).decrypt_block(plain).hex())
+
+print(AES.new(key, AES.MODE_ECB).encrypt(plain).hex())
+print(AES.new(key, AES.MODE_ECB).decrypt(plain).hex())

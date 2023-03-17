@@ -120,65 +120,65 @@ class DES_Block:
     def __init__(self, key: bytes):
         assert len(key) == 8
 
-        self.round_keys = self._generate_round_keys(key)
+        self.round_keys = DES_Block.generate_round_keys(key)
 
 
-    def encrypt_block(self, plain: bytes):
+    def encrypt(self, plain: bytes):
         assert len(plain) == 8
 
         plain = bin(bytes_to_long(plain))[2:].rjust(64, '0')
 
-        left, right = self._split(self._permutate(plain, self.IP))
-        for i in range(self.ROUNDS):
+        left, right = DES_Block.split(DES_Block.permutate(plain, DES_Block.IP))
+        for i in range(DES_Block.ROUNDS):
             sub_key = self.round_keys[i]
-            left, right = right, self._xor(left, self._F(right, sub_key))
+            left, right = right, DES_Block.xor(left, DES_Block.F(right, sub_key))
 
-        return long_to_bytes(int(self._permutate(right + left, self.FP), base=2), 8)
+        return long_to_bytes(int(DES_Block.permutate(right + left, DES_Block.FP), base=2), 8)
 
 
-    def decrypt_block(self, cipher: bytes):
+    def decrypt(self, cipher: bytes):
         assert len(cipher) == 8
 
         cipher = bin(bytes_to_long(cipher))[2:].rjust(64, '0')
 
-        left, right = self._split(self._permutate(cipher, self.IP))
-        for i in range(self.ROUNDS):
+        left, right = DES_Block.split(DES_Block.permutate(cipher, DES_Block.IP))
+        for i in range(DES_Block.ROUNDS):
             sub_key = self.round_keys[15 - i]
-            left, right = right, self._xor(left, self._F(right, sub_key))
+            left, right = right, DES_Block.xor(left, DES_Block.F(right, sub_key))
 
-        return long_to_bytes(int(self._permutate(right + left, self.FP), base=2), 8)
+        return long_to_bytes(int(DES_Block.permutate(right + left, DES_Block.FP), base=2), 8)
 
 
-    @classmethod
-    def _generate_round_keys(cls, key: bytes):
+    @staticmethod
+    def generate_round_keys(key: bytes):
         key = bin(bytes_to_long(key))[2:].rjust(64, '0')
 
         round_keys = []
-        left, right = cls._split(cls._permutate(key, cls.PC1))
-        for i in range(cls.ROUNDS):
-            left = cls._shift(left, cls.PC_shift[i])
-            right = cls._shift(right, cls.PC_shift[i])
-            round_keys.append(cls._permutate(left + right, cls.PC2))
+        left, right = DES_Block.split(DES_Block.permutate(key, DES_Block.PC1))
+        for i in range(DES_Block.ROUNDS):
+            left = DES_Block.shift(left, DES_Block.PC_shift[i])
+            right = DES_Block.shift(right, DES_Block.PC_shift[i])
+            round_keys.append(DES_Block.permutate(left + right, DES_Block.PC2))
 
         return round_keys
 
 
-    @classmethod
-    def _F(cls, inp_bin: str, sub_key: str):
-        state = cls._xor(cls._permutate(inp_bin, cls.E), sub_key)
+    @staticmethod
+    def F(inp_bin: str, sub_key: str):
+        state = DES_Block.xor(DES_Block.permutate(inp_bin, DES_Block.E), sub_key)
         out = ''
         for i in range(8):
-            _state = state[i * 6:(i + 1) * 6]
+            _state = state[i * 6: (i + 1) * 6]
 
             _row = int(_state[0] + _state[5], base=2)
-            _column = int(_state[1:5], base=2)
-            out += bin(cls.S_BOX[i][_row][_column])[2:].rjust(4, '0')
+            _column = int(_state[1: 5], base=2)
+            out += bin(DES_Block.S_BOX[i][_row][_column])[2:].rjust(4, '0')
 
-        return cls._permutate(out, cls.P)
+        return DES_Block.permutate(out, DES_Block.P)
 
 
-    @classmethod
-    def _permutate(cls, inp_bin: str, perm_box):
+    @staticmethod
+    def permutate(inp_bin: str, perm_box):
         out = ''
 
         for i in range(len(perm_box)):
@@ -187,16 +187,16 @@ class DES_Block:
         return out
 
 
-    @classmethod
-    def _split(cls, inp_bin: str):
+    @staticmethod
+    def split(inp_bin: str):
         return inp_bin[:len(inp_bin) // 2], inp_bin[len(inp_bin) // 2:]
 
 
-    @classmethod
-    def _xor(cls, inp_bin1: str, inp_bin2: str):
+    @staticmethod
+    def xor(inp_bin1: str, inp_bin2: str):
         return ''.join([str(int(b1 != b2)) for b1, b2 in zip(inp_bin1, inp_bin2)])
 
 
-    @classmethod
-    def _shift(cls, inp_bin: str, num: str):
+    @staticmethod
+    def shift(inp_bin: str, num: int):
         return inp_bin[num:] + inp_bin[:num]
