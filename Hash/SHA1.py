@@ -11,8 +11,6 @@ def sha1(message: bytes):
     chunks = [message[i: i + 64] for i in range(0, len(message), 64)]
     for chunk in chunks:
         w = [int.from_bytes(chunk[i: i + 4], byteorder='big') for i in range(0, len(chunk), 4)]
-
-
         for i in range(16, 80):
             w.append(left_rotate(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1))
 

@@ -45,3 +45,51 @@ msg = os.urandom(456)
 
 sha1(msg).digest()
 ```
+
+---
+
+## SHA256
+
+usage : 
+```python
+from SHA256 import *
+import os
+
+msg = os.urandom(456)
+
+sha256(msg)
+```
+
+same functionality with `hashlib` : 
+```python
+from hashlib import sha256
+import os
+
+msg = os.urandom(456)
+
+sha256(msg).digest()
+```
+
+---
+
+## SHA512
+
+usage : 
+```python
+from SHA512 import *
+import os
+
+msg = os.urandom(456)
+
+sha512(msg)
+```
+
+same functionality with `hashlib` : 
+```python
+from hashlib import sha512
+import os
+
+msg = os.urandom(456)
+
+sha512(msg).digest()
+```
