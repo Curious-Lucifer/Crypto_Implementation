@@ -4,4 +4,7 @@
 - AES
 - Block Cipher Mode
   - GCM Mode
+- Hash
+  - MD5
+  - SHA1
 
